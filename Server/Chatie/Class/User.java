@@ -1,8 +1,8 @@
 package Server.Chatie.Class;
 
-import java.rmi.server.UID;
+import java.io.Serializable;
 
-public class User {
+public class User implements Serializable {
     private String username;
     private String password;
     private String displayName;
