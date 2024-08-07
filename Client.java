@@ -1,31 +1,26 @@
+import Server.Chatie.Class.Chat;
 import Server.Chatie.Class.User;
+import Server.Chatie.Service.ChatHandler;
 
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
-        try {
-            String serverAddress = "localhost";
-            int port = 65432;
+        try (Socket socket = new Socket("localhost", 8080);
+             ObjectOutputStream ops = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream ips = new ObjectInputStream(socket.getInputStream());
+             Scanner scanner = new Scanner(System.in);) {
+
             String status = "VIRGIN";
             User loginUser = null;
-            String roomID = null;
-
-            // Connect to server
-            Socket socket = new Socket(serverAddress, port);
-            ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-            outputStream.flush();  // Ensure header is sent before ObjectInputStream is created
-            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
-            Scanner scanner = new Scanner(System.in);
-            Response responseObject = null;
+            String chatID = null;
 
             System.out.println("Welcome to Chatie!");
-
             while (true) {
+                // Create and send the request to the server
                 System.out.println("STATUS CODE: " + status);
-                responseObject = null;
 
                 if (status.equals("VIRGIN")) {
                     System.out.println("Type \"1\" to login to your account or \"2\" to register.\"");
@@ -47,11 +42,11 @@ public class Client {
 
                     String[] tuple = {loginUsername, loginPassword};
                     Response requestObject = new Response(status, tuple);
-                    outputStream.writeObject(requestObject);
-                    outputStream.flush();  // Ensure data is sent
+                    ops.writeObject(requestObject);
+                    ops.flush();
 
                     try {
-                        responseObject = (Response) inputStream.readObject();
+                        Response responseObject = (Response) ips.readObject();
                         System.out.println("Response received: " + responseObject.getStatusCode());
 
                         if (responseObject.getStatusCode().equals("200_LOGIN_S")) {
@@ -73,16 +68,12 @@ public class Client {
                     System.out.println("Please enter your account password");
                     String password = scanner.nextLine();
 
-                    System.out.println("Please enter your account Display Name");
-                    String displayName = scanner.nextLine();
-
-                    User newUser = new User(username, password, displayName);
-                    Response requestObject = new Response(status, newUser);
-                    outputStream.writeObject(requestObject);
-                    outputStream.flush();  // Ensure data is sent
-
+                    String[] tuple = {username, password};
+                    Response requestObject = new Response(status, tuple);
+                    ops.writeObject(requestObject);
+                    ops.flush();
                     try {
-                        responseObject = (Response) inputStream.readObject();
+                        Response responseObject = (Response) ips.readObject();
                         System.out.println("Response received: " + responseObject.getStatusCode());
 
                         if (responseObject.getStatusCode().equals("200_REGISTER_S")) {
@@ -99,6 +90,7 @@ public class Client {
                         e.printStackTrace();
                     }
                 } else if (status.equals("LOBBY")) {
+                    System.out.println("Welcome: " + loginUser.getUsername());
                     System.out.println("Type \"1\" to Create a Chat Room \"2\" to join Chat room or \"3\" to logout.\"");
                     String command = scanner.nextLine();
 
@@ -106,7 +98,7 @@ public class Client {
                         status = "JOINING";
                     } else if (command.equals("3")) {
                         loginUser = null;
-                        roomID = null;
+                        chatID = null;
                         status = "VIRGIN";
                     } else if (command.equals("1")) {
                         status = "CREATING";
@@ -118,20 +110,19 @@ public class Client {
                     String command = scanner.nextLine();
 
                     if (command.equals("LEAVE")) {
-                        roomID = null;
+                        chatID = null;
                         status = "LOBBY";
                     } else {
-                        roomID = command;
-                        Response requestObject = new Response(status, roomID);
-                        outputStream.writeObject(requestObject);
-                        outputStream.flush();  // Ensure data is sent
-
+                        Response requestObject = new Response(status, command);
+                        ops.writeObject(requestObject);
+                        ops.flush();
                         try {
-                            responseObject = (Response) inputStream.readObject();
+                            Response responseObject = (Response) ips.readObject();
                             System.out.println("Response received: " + responseObject.getStatusCode());
 
                             if (responseObject.getStatusCode().equals("200_JOIN_S")) {
                                 status = "CHAT";
+                                chatID = command;
                             } else {
                                 System.out.println("Invalid room ID, please try again.");
                             }
@@ -141,25 +132,86 @@ public class Client {
                         }
                     }
                 } else if (status.equals("CREATING")) {
-                    System.out.println("Please Enter the room ID");
-                    roomID = scanner.nextLine();
-                    Response requestObject = new Response(status, roomID);
-                    outputStream.writeObject(requestObject);
-                    outputStream.flush();  // Ensure data is sent
+                    System.out.println("Please Enter the room ID or Type \"LEAVE\" to go back to Lobby.\"");
+                    String newChatID = scanner.nextLine();
+
+                    if (newChatID.equals("LEAVE")) {
+                        status = "LOBBY";
+                    } else {
+                        Response requestObject = new Response(status, newChatID);
+                        ops.writeObject(requestObject);
+                        ops.flush();
+                        try {
+                            Response responseObject = (Response) ips.readObject();
+                            System.out.println("Response received: " + responseObject.getStatusCode());
+
+                            if (responseObject.getStatusCode().equals("200_CREATING_S")) {
+                                status = "CHAT";
+                                chatID = newChatID;
+                            } else {
+                                System.out.println("Room ID Already been used, please try again.");
+                            }
+                        } catch (IOException | ClassNotFoundException e) {
+                            System.out.println("Error handling client request: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+
+                } else if (status.equals("CHAT")) {
+                    Response requestObject = new Response("REQUEST_CHAT", chatID);
+                    ops.writeObject(requestObject);
+                    ops.flush();
 
                     try {
-                        responseObject = (Response) inputStream.readObject();
-                        System.out.println("Response received: " + responseObject.getStatusCode());
+                        Response responseObject = (Response) ips.readObject();
+                        System.out.println("Response on received: " + responseObject.getStatusCode());
+                        System.out.println("You are now CHAT in " + chatID + " Chat Room");
+
+                        if (responseObject.getStatusCode().equals("200_CHAT_S")) {
+                            Chat chat = (Chat) responseObject.getData();
+                            ChatHandler.printChat(chat.getMessages());
+
+                        } else {
+                            System.out.println("Chat Unavailable, please try again.");
+                            status = "LOBBY";
+                        }
+
                     } catch (IOException | ClassNotFoundException e) {
                         System.out.println("Error handling client request: " + e.getMessage());
                         e.printStackTrace();
                     }
+
+                    System.out.println("Please type a Message or Type \"LEAVE\" to go back to Lobby.\"");
+                    String message = scanner.nextLine();
+
+                    if (message.equals("LEAVE")) {
+                        chatID = null;
+                        status = "LOBBY";
+                    } else {
+                        String[] tuple = {chatID, loginUser.getUsername(), message};
+                        Response sending = new Response("SENDING", tuple);
+                        ops.writeObject(sending);
+                        ops.flush();
+                        try {
+                            Response responseObject = (Response) ips.readObject();
+                            System.out.println("Response received: " + responseObject.getStatusCode());
+
+                            if (responseObject.getStatusCode().equals("300_SENDING_US")) {
+                                System.out.println("Cannot send message, please try again.");
+                            }
+                        } catch (IOException | ClassNotFoundException e) {
+                            System.out.println("Error handling client request: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
                 }
 
                 System.out.println("------------------------------------------");
-            }
 
-        } catch (IOException e) {
+                // Simulate a short delay between requests
+                Thread.sleep(100);
+            }
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }

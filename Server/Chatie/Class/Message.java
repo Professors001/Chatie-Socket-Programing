@@ -1,8 +1,9 @@
 package Server.Chatie.Class;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Message {
+public class Message implements Serializable {
     private final String senderID;
     private final String message;
     private final Date date;

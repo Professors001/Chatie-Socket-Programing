@@ -10,13 +10,13 @@ public class UserManager {
     private static UserRepository userRepository = new UserRepository();
     private static final String SALT = "a1b2c3d4";
 
-    public static boolean registerUser(String username, String password, String displayName) {
+    public static boolean registerUser(String username, String password) {
         if (userRepository.getUser(username) != null) {
             return false;
         }
 
         String encryptedPassword = encryptPassword(password);
-        User newUser = new User(username, encryptedPassword, displayName);
+        User newUser = new User(username, encryptedPassword);
         userRepository.addUser(newUser);
 
         return true;

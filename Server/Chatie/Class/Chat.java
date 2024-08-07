@@ -1,8 +1,9 @@
 package Server.Chatie.Class;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Chat {
+public class Chat implements Serializable {
     private String roomID;
     private ArrayList<Message> messages;
 
