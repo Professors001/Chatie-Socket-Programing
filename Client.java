@@ -20,7 +20,7 @@ public class Client {
             System.out.println("Welcome to Chatie!");
             while (true) {
                 // Create and send the request to the server
-                System.out.println("STATUS CODE: " + status);
+//                System.out.println("STATUS CODE: " + status); //debug
 
                 if (status.equals("VIRGIN")) {
                     System.out.println("Type \"1\" to login to your account or \"2\" to register.\"");
@@ -47,7 +47,7 @@ public class Client {
 
                     try {
                         Response responseObject = (Response) ips.readObject();
-                        System.out.println("Response received: " + responseObject.getStatusCode());
+//                        System.out.println("Response received: " + responseObject.getStatusCode()); //debug
 
                         if (responseObject.getStatusCode().equals("200_LOGIN_S")) {
                             System.out.println("You are now logged in");
@@ -74,7 +74,7 @@ public class Client {
                     ops.flush();
                     try {
                         Response responseObject = (Response) ips.readObject();
-                        System.out.println("Response received: " + responseObject.getStatusCode());
+//                        System.out.println("Response received: " + responseObject.getStatusCode()); //debug
 
                         if (responseObject.getStatusCode().equals("200_REGISTER_S")) {
                             System.out.println("REGISTER SUCCESSFULLY");
@@ -118,7 +118,7 @@ public class Client {
                         ops.flush();
                         try {
                             Response responseObject = (Response) ips.readObject();
-                            System.out.println("Response received: " + responseObject.getStatusCode());
+//                            System.out.println("Response received: " + responseObject.getStatusCode()); //debug
 
                             if (responseObject.getStatusCode().equals("200_JOIN_S")) {
                                 status = "CHAT";
@@ -143,7 +143,7 @@ public class Client {
                         ops.flush();
                         try {
                             Response responseObject = (Response) ips.readObject();
-                            System.out.println("Response received: " + responseObject.getStatusCode());
+//                            System.out.println("Response received: " + responseObject.getStatusCode()); //debug
 
                             if (responseObject.getStatusCode().equals("200_CREATING_S")) {
                                 status = "CHAT";
@@ -164,7 +164,7 @@ public class Client {
 
                     try {
                         Response responseObject = (Response) ips.readObject();
-                        System.out.println("Response on received: " + responseObject.getStatusCode());
+//                        System.out.println("Response on received: " + responseObject.getStatusCode()); //debug
                         System.out.println("You are now CHAT in " + chatID + " Chat Room");
 
                         if (responseObject.getStatusCode().equals("200_CHAT_S")) {
@@ -194,7 +194,7 @@ public class Client {
                         ops.flush();
                         try {
                             Response responseObject = (Response) ips.readObject();
-                            System.out.println("Response received: " + responseObject.getStatusCode());
+//                            System.out.println("Response received: " + responseObject.getStatusCode()); //debug
 
                             if (responseObject.getStatusCode().equals("300_SENDING_US")) {
                                 System.out.println("Cannot send message, please try again.");

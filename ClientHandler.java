@@ -94,6 +94,7 @@ class ClientHandler extends Thread {
                         response.setData(null);
                     }
                 }
+                ops.reset();
                 ops.writeObject(response);
                 System.out.println("Sent response: " + response);
             }
